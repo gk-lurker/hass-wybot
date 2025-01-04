@@ -1,11 +1,11 @@
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import v1 as pydantic_v1
 import logging
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class DP(BaseModel):
+class DP(pydantic_v1.BaseModel):
     """Represents the response for a device command operation."""
 
     # Represents a data point for a command.
