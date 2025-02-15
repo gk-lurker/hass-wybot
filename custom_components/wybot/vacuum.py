@@ -5,12 +5,9 @@ from __future__ import annotations
 import logging
 
 from homeassistant.components.vacuum import (
-    STATE_CLEANING,
-    STATE_DOCKED,
-    STATE_PAUSED,
-    STATE_RETURNING,
     StateVacuumEntity,
     VacuumEntityFeature,
+    VacuumActivity,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -90,7 +87,7 @@ class WyBotVacuum(StateVacuumEntity, CoordinatorEntity):
         return self._data.name
 
     @property
-    def state(self) -> str | None:
+    def activity(self) -> VacuumActivity | None:
         """Return the state of thee device."""
         battery = self._data.get_dp(Battery)
         cleaning_status = self._data.get_dp(CleaningStatus)
@@ -100,16 +97,16 @@ class WyBotVacuum(StateVacuumEntity, CoordinatorEntity):
             return None
         if battery.charge_state in (BatteryState.CHARGING, BatteryState.CHARGED):
             # Docked and charging
-            return STATE_DOCKED
+            return VacuumActivity.DOCKED
         if dock_status.status == DockStatus.RETURNING:
-            return STATE_RETURNING
+            return VacuumActivity.RETURNING
         if cleaning_status.status == CleaningStatusMode.STOPPED:
-            return STATE_PAUSED
+            return VacuumActivity.PAUSED
         if cleaning_status.status in (
             CleaningStatusMode.CLEANING,
             CleaningStatusMode.STARTING,
         ):
-            return STATE_CLEANING
+            return VacuumActivity.CLEANING
 
     @property
     def fan_speed_list(self) -> list[str]:
