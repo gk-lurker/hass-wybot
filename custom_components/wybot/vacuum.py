@@ -6,8 +6,8 @@ import logging
 
 from homeassistant.components.vacuum import (
     StateVacuumEntity,
-    VacuumEntityFeature,
     VacuumActivity,
+    VacuumEntityFeature,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -61,16 +61,14 @@ class WyBotVacuum(StateVacuumEntity, CoordinatorEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        self._data = self.coordinator.data[self._idx]
+        self._data = self.coordinator.data[str(self._idx)]
         super()._handle_coordinator_update()
 
     @property
     def device_info(self) -> DeviceInfo:
         """Return device information."""
         return DeviceInfo(
-            identifiers={
-                (DOMAIN, self._idx),
-            },
+            identifiers={(DOMAIN, str(self._idx))},
             name=self._data.name,
             manufacturer=MANUFACTURER,
             model=self._data.device.device_type,
@@ -107,6 +105,7 @@ class WyBotVacuum(StateVacuumEntity, CoordinatorEntity):
             CleaningStatusMode.STARTING,
         ):
             return VacuumActivity.CLEANING
+        return None
 
     @property
     def fan_speed_list(self) -> list[str]:

@@ -1,15 +1,15 @@
 import asyncio
-import time
 from datetime import timedelta
 import logging
+import time
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .wybot_mqtt_client import WyBotMQTTClient
-from .wybot_http_client import WyBotHTTPClient
-from .wybot_models import Group, Command, Device, Docker
 from .wybot_dp_models import GenericDP
+from .wybot_http_client import WyBotHTTPClient
+from .wybot_models import Command, Device, Docker, Group
+from .wybot_mqtt_client import WyBotMQTTClient
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -92,7 +92,11 @@ class WyBotCoordinator(DataUpdateCoordinator):
             deviceId = topic[35:]
             command_response = Command(**data)
             group = self.get_group(deviceId)
-            if group.docker is not None and group.docker.docker_id == deviceId:
+            if (
+                group is not None
+                and group.docker is not None
+                and group.docker.docker_id == deviceId
+            ):
                 group.docker.dps = {
                     **group.docker.dps,
                     **command_response.get_dps_as_keyed_dict(),
@@ -100,7 +104,7 @@ class WyBotCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug(
                     f"SEND RESPONSE ---- docker - {deviceId} ---- Current DPs: {group.docker.dps}"
                 )
-            else:
+            elif group is not None and group.device is not None:
                 group.device.dps = {
                     **group.device.dps,
                     **command_response.get_dps_as_keyed_dict(),
@@ -108,7 +112,8 @@ class WyBotCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug(
                     f"SEND RESPONSE ---- device - {deviceId} ---- Current DPs: {group.device.dps}"
                 )
-            self.data[group.id] = group
+            if group is not None:
+                self.data[group.id] = group
 
         if topic.startswith("/device/DATA/recv_transparent_query_data/"):
             deviceId = topic[41:]
@@ -121,8 +126,8 @@ class WyBotCoordinator(DataUpdateCoordinator):
 
         self.hass.add_job(self.async_set_updated_data, self.data)
 
-    def get_device_or_docker(self, deviceId: str) -> Device | Docker:
-        """loops through the self.data and find the device matching the deviceId"""
+    def get_device_or_docker(self, deviceId: str) -> Device | Docker | None:
+        """Loops through the self.data and find the device matching the deviceId"""
         for [device_id, device] in self.data.items():
             if device.device.device_id == deviceId:
                 return device.device
@@ -130,7 +135,7 @@ class WyBotCoordinator(DataUpdateCoordinator):
                 return device.docker
         return None
 
-    def get_group(self, deviceId: str) -> Group:
+    def get_group(self, deviceId: str) -> Group | None:
         for [device_id, device] in self.data.items():
             if device.device.device_id == deviceId:
                 return device

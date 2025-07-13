@@ -46,13 +46,24 @@ class WyBotHTTPClient:
     def authenticate(self) -> bool:
         """Test if we can authenticate with the host."""
         login_response = self.login()
-        self._token = login_response.metadata.token
-        self._user_id = login_response.metadata.user_id
+        self._token = (
+            login_response.metadata.token
+            if login_response and login_response.metadata
+            else None
+        )
+        self._user_id = (
+            login_response.metadata.user_id
+            if login_response and login_response.metadata
+            else None
+        )
         return self._token is not None
 
-    def login(self) -> LoginResponse:
+    def login(self) -> LoginResponse | None:
         """Authenticate the user and retrieve a token."""
         _LOGGER.debug("Grabbing a token with a user and password")
+        if not self._password:
+            _LOGGER.error("Password is not set")
+            return None
         md5_hash = hashlib.md5()
         md5_hash.update(self._password.encode("utf-8"))
         md5_hex = md5_hash.hexdigest()
@@ -70,19 +81,22 @@ class WyBotHTTPClient:
             )
             response.close()
             if response.status_code != 200:
-                _LOGGER.error(f"Error getting token: {response.text}")
+                _LOGGER.error("Error getting token: %s", response.text)
                 return None
 
             json_response = response.json()
             return LoginResponse(**json_response)
         except Exception as e:
-            _LOGGER.error(f"Error getting token: {e}")
+            _LOGGER.error("Error getting token: %s", e)
             return None
 
-    def get_devices_and_status(self) -> DevicesResponse:
+    def get_devices_and_status(self) -> DevicesResponse | None:
         """Grab all devices and statuses."""
-        device_url = DEVICES_URL + self._user_id
-        _LOGGER.debug(f"Grabbing devices and statuses: {device_url}")
+        if self._user_id is None:
+            _LOGGER.error("User ID is not set")
+            return None
+        device_url = DEVICES_URL + str(self._user_id)
+        _LOGGER.debug("Grabbing devices and statuses: %s", device_url)
         try:
             response = requests.get(
                 device_url,
@@ -92,16 +106,18 @@ class WyBotHTTPClient:
             )
             response.close()
             if response.status_code != 200:
-                _LOGGER.error(f"Error getting devices: {response.text}")
+                _LOGGER.error("Error getting devices: %s", response.text)
                 return None
 
             json_response = response.json()
             return DevicesResponse(**json_response)
         except Exception as e:
-            _LOGGER.error(f"Error getting token: {e}")
+            _LOGGER.error("Error getting token: %s", e)
             return None
 
     def get_indexed_current_grouped_devices(self) -> dict[str, Group]:
         """Return a dictionary of devices indexed by the grouped device_id."""
         response = self.get_devices_and_status()
+        if response is None:
+            return {}
         return {group.id: group for group in response.metadata.groups}

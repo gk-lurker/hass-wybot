@@ -3,6 +3,7 @@
 from typing import TypeVar
 
 from pydantic import v1 as pydantic_v1
+
 from .wybot_dp_models import DP, GenericDP, wybot_dp_id
 
 
@@ -31,7 +32,7 @@ class Command(pydantic_v1.BaseModel):
 
     def get_dps_as_keyed_dict(self) -> dict[str, GenericDP]:
         """Return the DP list as a keyed dictionary."""
-        return {dp.id: wybot_dp_id.get(dp.id, GenericDP)(dp) for dp in self.dp}
+        return {str(dp.id): wybot_dp_id.get(dp.id, GenericDP)(dp) for dp in self.dp}
 
     class Config:
         """Represents the configuration options for the class."""
@@ -71,7 +72,7 @@ class LoginResponse(pydantic_v1.BaseModel):
 class Version(pydantic_v1.BaseModel):
     """Represents the firmware version information for a device."""
 
-    firmware: str = pydantic_v1.Field(alias="Firmware")
+    firmware: str | None = pydantic_v1.Field(alias="Firmware")
 
     class Config:
         """Represents the configuration options for the class."""
@@ -87,7 +88,7 @@ class Device(pydantic_v1.BaseModel):
     device_name: str = pydantic_v1.Field(alias="deviceName")
     device_type: str = pydantic_v1.Field(alias="deviceType")
     ble_name: str = pydantic_v1.Field(alias="bleName")
-    version: Version
+    version: Version | None = None
     pool_id: str | None = pydantic_v1.Field(alias="poolId")
     auto_update: str = pydantic_v1.Field(alias="autoUpdate")
 
@@ -111,7 +112,7 @@ class Device(pydantic_v1.BaseModel):
             raise TypeError(
                 f"The class {cls.__name__} does not inherit from BaseClass."
             )
-        for [id, dp] in self.dps.items():
+        for [_, dp] in self.dps.items():
             if isinstance(dp, cls):
                 return dp
         return None
@@ -161,7 +162,7 @@ class Docker(pydantic_v1.BaseModel):
             raise TypeError(
                 f"The class {cls.__name__} does not inherit from BaseClass."
             )
-        for [id, dp] in self.dps.items():
+        for [_, dp] in self.dps.items():
             if isinstance(dp, cls):
                 return dp
         return None
@@ -208,11 +209,11 @@ class Group(pydantic_v1.BaseModel):
             raise TypeError(
                 f"The class {cls.__name__} does not inherit from BaseClass."
             )
-        for [id, dp] in self.device.dps.items():
+        for [_, dp] in self.device.dps.items():
             if isinstance(dp, cls):
                 return dp
         if self.docker is not None:
-            for [id, dp] in self.docker.dps.items():
+            for [_, dp] in self.docker.dps.items():
                 if isinstance(dp, cls):
                     return dp
         return None

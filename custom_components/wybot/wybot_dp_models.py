@@ -1,6 +1,7 @@
 from enum import Enum
-from pydantic import v1 as pydantic_v1
 import logging
+
+from pydantic import v1 as pydantic_v1
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,8 +34,10 @@ class GenericDP:
 
     def __init__(self, data: DP) -> None:
         self.id = data.id
-        self.type = data.type
-        self.len = data.len
+        if data.type is not None:
+            self.type = data.type
+        if data.len is not None:
+            self.len = data.len
         self.data = data.data
 
     def dict(self) -> dict:
@@ -61,7 +64,7 @@ class CleaningStatus(GenericDP):
     type = 4
     len = 1
 
-    def __init__(self, data: dict = None, status: CleaningStatusMode = None) -> None:
+    def __init__(self, data: DP | None = None, status: CleaningStatusMode | None = None) -> None:
         if data is not None:
             super().__init__(data)
         if status is not None:
@@ -69,6 +72,8 @@ class CleaningStatus(GenericDP):
 
     @property
     def status(self) -> CleaningStatusMode:
+        if self.data is None:
+            return CleaningStatusMode.UNKNOWN
         return CleaningStatusMode(int(self.data, 16))
 
     @status.setter
@@ -93,7 +98,7 @@ class Dock(GenericDP):
     type = 4
     len = 1  # can be 2 when recieving, no idea what the first characters represent
 
-    def __init__(self, data: dict = None, status: DockStatus = None) -> None:
+    def __init__(self, data: DP | None = None, status: DockStatus | None = None) -> None:
         if data is not None:
             super().__init__(data)
         if status is not None:
@@ -102,6 +107,8 @@ class Dock(GenericDP):
     @property
     def status(self) -> DockStatus:
         """Return the status of the dock. Note, not really sure how to read this, other then send it comamnd 01 to return to dock."""
+        if self.data is None:
+            return DockStatus.GENERAL  # Default to general status if no data
         return DockStatus(int(self.data[-2:], 16))
 
     @status.setter
@@ -129,7 +136,7 @@ class CleaningMode(GenericDP):
         "Eco Floor",
     ]
 
-    def __init__(self, data: dict = None, mode: str = None) -> None:
+    def __init__(self, data: DP | None = None, mode: str | None = None) -> None:
         if data is not None:
             super().__init__(data)
         if mode is not None:
@@ -137,11 +144,13 @@ class CleaningMode(GenericDP):
 
     @property
     def cleaning_mode(self) -> str:
+        if self.data is None:
+            return self.CLEANING_MODES[0]  # Default to first mode if no data
         return self.CLEANING_MODES[int(self.data, 16)]
 
     @cleaning_mode.setter
-    def cleaning_mode(self, data):
-        self.data = f"{CleaningMode.CLEANING_MODES.index(data):02x}"
+    def cleaning_mode(self, data: str):
+        self.data = f"{self.CLEANING_MODES.index(data):02x}"
 
     def __str__(self):
         return f"({__class__.__name__}, mode={self.cleaning_mode})"
@@ -157,17 +166,21 @@ class BatteryState(Enum):
 
 
 class Battery(GenericDP):
-    def __init__(self, data: dict) -> None:
+    def __init__(self, data: DP) -> None:
         super().__init__(data)
 
     @property
     def battery_level(self) -> int:
         # get the last 2 characters of the data of battery_level and convert from hex to decimal
+        if self.data is None:
+            return 0
         return int(self.data[-2:], 16)
 
     @property
-    def charge_state(self) -> int:
+    def charge_state(self) -> BatteryState:
         # get the first 2 digits of battery_property and convert from hex to decimal
+        if self.data is None:
+            return BatteryState.NOT_PLUGGED_IN
         return BatteryState(int(self.data[:2], 16))
 
     def __str__(self):
