@@ -125,6 +125,11 @@ class Dock(GenericDP):
         return f"({__class__.__name__}, status={self.data})"
 
 
+import logging
+
+LOGGER = logging.getLogger(__name__)
+
+
 class CleaningMode(GenericDP):
     id = 1
     type = 4
@@ -146,20 +151,44 @@ class CleaningMode(GenericDP):
             self.cleaning_mode = mode
 
     @property
-    def cleaning_mode(self) -> str:
-        if self.data is None:
-            return self.CLEANING_MODES[0]  # Default to first mode if no data
-        return self.CLEANING_MODES[int(self.data, 16)]
+    def cleaning_mode(self) -> str | None:
+        """Return the current cleaning mode as a string, or None if unknown."""
+        if not self.data:
+            # No data yet – treat as unknown instead of defaulting to index 0
+            return None
+
+        try:
+            idx = int(self.data, 16)
+        except (TypeError, ValueError):
+            LOGGER.debug("WYBOT: invalid cleaning_mode data %s", self.data)
+            return None
+
+        if 0 <= idx < len(self.CLEANING_MODES):
+            return self.CLEANING_MODES[idx]
+
+        LOGGER.debug(
+            "WYBOT: cleaning_mode index %s out of range for data %s (len=%s)",
+            idx,
+            self.data,
+            len(self.CLEANING_MODES),
+        )
+        return None
 
     @cleaning_mode.setter
-    def cleaning_mode(self, data: str):
-        self.data = f"{self.CLEANING_MODES.index(data):02x}"
+    def cleaning_mode(self, mode: str) -> None:
+        """Set the mode using a string from CLEANING_MODES."""
+        if mode not in self.CLEANING_MODES:
+            raise ValueError(f"Unknown cleaning mode {mode!r}")
+        self.data = f"{self.CLEANING_MODES.index(mode):02x}"
 
-    def __str__(self):
-        return f"({__class__.__name__}, mode={self.cleaning_mode})"
+    def __str__(self) -> str:
+        mode = self.cleaning_mode
+        return f"({__class__.__name__}, mode={mode or 'UNKNOWN'})"
 
-    def __repr__(self):
-        return f"({__class__.__name__}, mode={self.cleaning_mode})"
+    def __repr__(self) -> str:
+        mode = self.cleaning_mode
+        return f"({__class__.__name__}, mode={mode or 'UNKNOWN'})"
+
 
 
 class BatteryState(Enum):
