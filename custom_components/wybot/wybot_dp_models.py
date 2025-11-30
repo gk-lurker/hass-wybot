@@ -3,7 +3,7 @@ import logging
 
 from pydantic import v1 as pydantic_v1
 
-_LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 class DP(pydantic_v1.BaseModel):
@@ -88,6 +88,7 @@ class CleaningStatus(GenericDP):
 
 
 class DockStatus(Enum):
+    UNKNOWN = 0
     RETURNING = 1
     GENERAL = 3
 
@@ -106,10 +107,12 @@ class Dock(GenericDP):
 
     @property
     def status(self) -> DockStatus:
-        """Return the status of the dock. Note, not really sure how to read this, other then send it comamnd 01 to return to dock."""
-        if self.data is None:
-            return DockStatus.GENERAL  # Default to general status if no data
-        return DockStatus(int(self.data[-2:], 16))
+        raw = int(self.data[-2:], 16)
+        try:
+            return DockStatus(raw)
+        except ValueError:
+            LOGGER.debug("Unknown dock status value %s, treating as UNKNOWN", raw)
+            return DockStatus.UNKNOWN
 
     @status.setter
     def status(self, data: DockStatus):
