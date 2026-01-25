@@ -1,0 +1,28 @@
+{
+  "codeowners": [
+    "@bassrock"
+  ],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/gk-lurker/hass-wybot",
+  "domain": "gk_hass_wybot",
+  "homekit": {},
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/gk-lurker/hass-wybot/issues",
+  "loggers": [
+    "custom_components.gk_hass_wybot"
+  ],
+  "name": "WyBot (GK fork)",
+  "platforms": [
+    "vacuum",
+    "sensor",
+    "select"
+  ],
+  "requirements": [
+    "pydantic",
+    "paho-mqtt"
+  ],
+  "ssdp": [],
+  "version": "1.2.0",
+  "zeroconf": []
+}

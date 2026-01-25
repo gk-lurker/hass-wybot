@@ -1,0 +1,30 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "WyBot",
+        "description": "Sign in to your WyBot account.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "auth": "Authentication failed. Please check your username and password."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "WyBot Options",
+        "data": {
+          "dp0_delay_seconds": "DP0 delay seconds",
+          "ts_offset_seconds": "Timestamp offset seconds",
+          "use_clean_time": "Use Clean Time on Start (WY460)",
+          "clean_time_minutes": "Clean Time (minutes)"
+        }
+      }
+    }
+  }
+}
