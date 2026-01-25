@@ -1,6 +1,6 @@
 {
   "codeowners": [
-    "@bassrock"
+    "@gk-lurker"
   ],
   "config_flow": true,
   "dependencies": [],
